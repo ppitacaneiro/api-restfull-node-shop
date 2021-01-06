@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 mongoose.connect('mongodb+srv://root:nLjBdZN9F64dLQ7@cluster0.yqc57.mongodb.net/node-rest-api-test?retryWrites=true&w=majority',{
     useNewUrlParser: true
 });
+mongoose.Promise = global.Promise;
 
 const productRoutes = require('./api/routes/products');
 const orderRoutes = require('./api/routes/orders');

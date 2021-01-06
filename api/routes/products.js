@@ -6,9 +6,24 @@ const { response } = require('../../app');
 
 router.get('/', (req,resp,next) => {
     Product.find()
+        .select('_id name price')
         .exec()
         .then(docs => {
-            resp.status(200).json(docs);
+            const response = {
+                count : docs.length,
+                products : docs.map(doc => {
+                    return {
+                        name : doc.name,
+                        price : doc.price,
+                        _id : doc._id,
+                        request : {
+                            type : 'GET',
+                            url : 'http://localhost:3000/products/' + doc._id
+                        }
+                    }
+                })
+            }
+            resp.status(200).json(response);
         }).catch(error => {
             resp.status(500).json(error);
         });
@@ -24,7 +39,15 @@ router.post('/', (req,resp,next) => {
            .then(result => {
                 resp.status(201).json({
                     message : 'Product save',
-                    createdProduct : product
+                    createdProduct : {
+                        _id : product._id,
+                        name : product.name,
+                        price : product.price,
+                        request : {
+                            type : 'GET',
+                            url : 'http://localhost:3000/products/' + product._id
+                        }
+                    }
                 });
            }).catch(error => {
                 resp.status(500).json({
@@ -36,7 +59,10 @@ router.post('/', (req,resp,next) => {
 
 router.get('/:productId', (req,resp,next) => {
     const id = req.params.productId;
-    Product.findById(id).exec().then(doc => {
+    Product.findById(id)
+        .select('_id name price')
+        .exec()
+        .then(doc => {
         resp.status(200).json({
             product : doc
         });
