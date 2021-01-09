@@ -9,17 +9,31 @@ const storage = multer.diskStorage({
         callback(null,'./uploads/');
     },
     filename : function(request,file,callback) {
-        callback(null,file.originalname);
+        callback(null,Date.now() + file.originalname);
     }
 });
 
-const upload = multer({storage: storage});
+const fileFilter = (request,file,callback) => {
+    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
+        callback(null,true);
+    } else {
+        callback(new Error('File extension not valid'),false);
+    }
+};
+
+const upload = multer({
+    storage: storage,
+    limits : {
+        fileSize : 1024 * 1024 * 1000,
+    },
+    fileFilter : fileFilter
+});
 
 const { response } = require('../../app');
 
 router.get('/', (req,resp,next) => {
     Product.find()
-        .select('_id name price')
+        .select('_id name price productImage')
         .exec()
         .then(docs => {
             const response = {
@@ -29,6 +43,7 @@ router.get('/', (req,resp,next) => {
                         name : doc.name,
                         price : doc.price,
                         _id : doc._id,
+                        productImage : doc.productImage,
                         request : {
                             type : 'GET',
                             url : 'http://localhost:3000/products/' + doc._id
@@ -44,10 +59,12 @@ router.get('/', (req,resp,next) => {
 
 router.post('/', upload.single('productImage') ,(req,resp,next) => {
     console.log(req.file);
+    const pathImage = 'http://localhost:3000/uploads/' + req.file.filename;
     const product = new Product ({
         _id : new mongoose.Types.ObjectId,
         name : req.body.name,
-        price : req.body.price
+        price : req.body.price,
+        productImage : pathImage
     });
     product.save()
            .then(result => {
@@ -74,7 +91,7 @@ router.post('/', upload.single('productImage') ,(req,resp,next) => {
 router.get('/:productId', (req,resp,next) => {
     const id = req.params.productId;
     Product.findById(id)
-        .select('_id name price')
+        .select('_id name price productImage')
         .exec()
         .then(doc => {
         resp.status(200).json({
